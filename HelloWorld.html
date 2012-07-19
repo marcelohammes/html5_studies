@@ -18,7 +18,7 @@
 		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 	</head>
 
-	<body>
+	<body onload="start();">
 		<div>
 			<header>
 				<h1>HelloWorld</h1>
@@ -26,6 +26,115 @@
 
 			<canvas id="HelloWorldCanvas" width="240" height="320"></canvas>
 
+<script type="text/javascript">
+
+        var gl;
+        var canvas;
+        var shader;
+        var vertexBuffer;
+
+        var getContext = function (canvas, name) {
+            var result = null;
+
+            try {
+                result = canvas.getContext(name)
+            } catch (e) { }
+
+            return result;
+        };
+
+        var createWebGLContext = function (canvas) {
+            var result = getContext(canvas, "webgl");
+            if (!result) result = getContext(canvas, "experimental-webgl");
+
+            if (result) {
+                result.viewportHeight = canvas.height;
+                result.viewportWidth = canvas.width;
+            }
+            else {
+                alert("Failed to create WebGL context!");
+            }
+
+            return result;
+        }
+
+        function compileAndLoadShader(type, source) {
+            var result = gl.createShader(type);
+            gl.shaderSource(result, source);
+            gl.compileShader(result);
+
+            if (!gl.getShaderParameter(result, gl.COMPILE_STATUS)) {
+                alert("Error compiling shader" + gl.getShaderInfoLog(result));
+                gl.deleteShader(result);
+                return null;
+            }
+            return result;
+        }
+
+
+        function setupShaders() {
+            var vsSource =
+                "attribute vec3 aVertexPosition;\n" +
+                "void main() {\n" +
+                "  gl_Position = vec4(aVertexPosition, 1.0);\n" +
+                "}\n";
+
+            var fsSource =
+                "precision mediump float;\n" +
+                "void main() {\n" +
+                "  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n" +
+                "}\n";
+
+            var vertexShader = compileAndLoadShader(gl.VERTEX_SHADER, vsSource);
+            var fragmentShader = compileAndLoadShader(gl.FRAGMENT_SHADER, fsSource);
+
+            shaderProgram = gl.createProgram();
+            gl.attachShader(shaderProgram, vertexShader);
+            gl.attachShader(shaderProgram, fragmentShader);
+            gl.linkProgram(shaderProgram);
+
+            if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+                alert("Failed to setup shaders");
+            }
+
+            gl.useProgram(shaderProgram);
+            shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+        }
+
+        function setupBuffers() {
+            vertexBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+            var triangleVertices = [
+                    0.0, 0.5, 0.0,
+                    -0.5, -0.5, 0.0,
+                    0.5, -0.5, 0.0
+            ];
+
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangleVertices), gl.STATIC_DRAW);
+            vertexBuffer.itemSize = 3;
+            vertexBuffer.numberOfItems = 3;
+        }
+
+        function draw() {
+            gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute,
+                                    vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+            gl.drawArrays(gl.TRIANGLES, 0, vertexBuffer.numberOfItems);
+        }
+
+        function start() {
+            canvas = document.getElementById("HelloWorldCanvas");
+            gl = createWebGLContext(canvas);
+            setupShaders();
+            setupBuffers();
+            gl.clearColor(0.0, 0.0, 1.0, 1.0);
+            draw();
+        }
+    </script>
+    
 			<div>
 
 			</div>
